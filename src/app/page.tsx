@@ -14,9 +14,9 @@ const jobListings = [
 ];
 
 export default function Jobs() {
-  const [copied, setCopied] = useState(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const handleCopyLink = (link) => {
+  const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link);
     setCopied(link);
     setTimeout(() => setCopied(null), 2000); // Reset the copied state after 2 seconds
