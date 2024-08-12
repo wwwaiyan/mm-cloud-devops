@@ -1,7 +1,7 @@
 .container {
   padding: 20px;
   min-height: 100vh;
-  background-image: url('../background/bg1.jpeg');
+  background-image: url('../../public/background/bg1.jpeg');
   background-size: cover;
   background-position: center;
   display: flex;
