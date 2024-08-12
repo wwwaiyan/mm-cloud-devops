@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaExternalLinkAlt, FaCopy, FaCheck, FaSearch } from 'react-icons/fa';
 
 const jobListings = [
@@ -18,6 +18,28 @@ export default function Jobs() {
   const [copied, setCopied] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [snowflakes, setSnowflakes] = useState<Array<{ id: number; x: number; y: number }>>([]);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const newSnowflake = {
+        id: Date.now(),
+        x: event.clientX,
+        y: event.clientY,
+      };
+      setSnowflakes((prev) => [...prev, newSnowflake]);
+
+      // Remove snowflake after 1 second
+      setTimeout(() => {
+        setSnowflakes((prev) => prev.filter((flake) => flake.id !== newSnowflake.id));
+      }, 1000);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link);
@@ -36,8 +58,24 @@ export default function Jobs() {
     <div className="relative min-h-screen flex flex-col justify-between bg-cover bg-center bg-fixed" style={{ backgroundImage: 'url(/background.jpg)' }}>
       <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
       
+      {/* Snowflake Effects */}
+      {snowflakes.map((flake) => (
+        <div
+          key={flake.id}
+          className="absolute bg-white rounded-full pointer-events-none"
+          style={{
+            left: flake.x,
+            top: flake.y,
+            width: '8px',
+            height: '8px',
+            transform: `translate(-50%, -50%)`,
+            animation: 'snowflake-fall 1s linear forwards',
+          }}
+        ></div>
+      ))}
+
       <div className="relative z-10 p-8 max-w-6xl w-full mx-auto bg-black bg-opacity-30 rounded-lg shadow-lg mb-auto">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">DevOps & Cloud Engineer Jobs in Myanmar</h1>
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">DevOps & Cloud Engineer Jobs</h1>
         
         {/* Search and Filter Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -93,6 +131,19 @@ export default function Jobs() {
       <footer className="relative z-10 p-4 text-center bg-black bg-opacity-50 text-white">
         <p>&copy; 2024 Your Website. All rights reserved.</p>
       </footer>
+
+      <style jsx>{`
+        @keyframes snowflake-fall {
+          0% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+          }
+        }
+      `}</style>
     </div>
   );
 }
