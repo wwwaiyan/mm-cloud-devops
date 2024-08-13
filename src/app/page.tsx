@@ -1,18 +1,26 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { FaExternalLinkAlt, FaCopy, FaCheck, FaEdit, FaTrashAlt, FaSearch, FaPlus } from 'react-icons/fa';
 import { db } from './firebase'; // Firebase config file
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+
+// Define a TypeScript interface for a Job
+interface Job {
+  id: string;
+  title: string;
+  company: string;
+  link: string;
+}
 
 export default function Jobs() {
   const [copied, setCopied] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [snowflakes, setSnowflakes] = useState<Array<{ id: number; x: number; y: number }>>([]);
-  const [jobListings, setJobListings] = useState([]);
+  const [jobListings, setJobListings] = useState<Job[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ title: '', company: '', link: '' });
+  const [formData, setFormData] = useState<{ title: string; company: string; link: string }>({ title: '', company: '', link: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [editJobId, setEditJobId] = useState<string | null>(null);
 
@@ -20,7 +28,7 @@ export default function Jobs() {
   useEffect(() => {
     const fetchJobs = async () => {
       const querySnapshot = await getDocs(collection(db, "jobs"));
-      const jobsArray = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const jobsArray: Job[] = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Job[];
       setJobListings(jobsArray);
     };
     fetchJobs();
@@ -37,14 +45,14 @@ export default function Jobs() {
     setJobListings(jobListings.filter(job => job.id !== id));
   };
 
-  const handleEdit = (job: { id: string; title: string; company: string; link: string }) => {
+  const handleEdit = (job: Job) => {
     setIsEditing(true);
     setShowForm(true);
     setEditJobId(job.id);
     setFormData({ title: job.title, company: job.company, link: job.link });
   };
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isEditing && editJobId) {
       await updateDoc(doc(db, "jobs", editJobId), formData);
@@ -58,7 +66,7 @@ export default function Jobs() {
 
     // Refresh the job listings after the operation
     const querySnapshot = await getDocs(collection(db, "jobs"));
-    const jobsArray = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const jobsArray: Job[] = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Job[];
     setJobListings(jobsArray);
   };
 
