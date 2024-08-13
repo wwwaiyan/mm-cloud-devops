@@ -1,50 +1,65 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FaExternalLinkAlt, FaCopy, FaCheck, FaSearch } from 'react-icons/fa';
-
-const jobListings = [
-  { id: 1, title: 'Senior Officer - Devops Engineer', company: 'Yoma Bank', link: 'https://bit.ly/senior-devops-yomabank' },
-  { id: 2, title: 'Senior DevOps Engineer', company: 'Yoma Fleet', link: 'https://bit.ly/senior-devops-engineer-yomafleet' },
-  { id: 3, title: 'ICT Dev Ops Senior Engineer', company: 'Ooredoo Myanmar', link: 'https://bit.ly/ict-devops-engineer-ooredoo' },
-  { id: 4, title: 'Devops Engineer', company: 'Startrick Sdn Bhd', link: 'https://bit.ly/devops-engineer-StartrickSdnBhd' },
-  { id: 5, title: 'Assistant Engineer (AWS Devops)', company: 'Global Technology Co., Ltd (GlobalNet)', link: 'https://bit.ly/aws-devops-globalnet' },
-  { id: 6, title: 'DevOps Engineer', company: 'HQS Co., Ltd | QSLogics', link: 'https://bit.ly/devops-engineer-hqs-qsl' },
-  { id: 7, title: 'System Engineer/Cloud Engineer', company: 'Myanmar Software Integrated Solutions', link: 'https://bit.ly/system-cloud-engineer-msis' },
-  { id: 8, title: 'Software-Driven DevOps Engineer', company: 'ABC Content Solutions | Mahar', link: 'https://bit.ly/software-driven-devops-mahar-abc' },
-];
+import { FaExternalLinkAlt, FaCopy, FaCheck, FaEdit, FaTrashAlt, FaSearch, FaPlus } from 'react-icons/fa';
+import { db } from './firebase'; // Firebase config file
+import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
 export default function Jobs() {
   const [copied, setCopied] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [snowflakes, setSnowflakes] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const [jobListings, setJobListings] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ title: '', company: '', link: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editJobId, setEditJobId] = useState<string | null>(null);
 
+  // Fetch job listings from Firebase
   useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      const newSnowflake = {
-        id: Date.now(),
-        x: event.clientX,
-        y: event.clientY,
-      };
-      setSnowflakes((prev) => [...prev, newSnowflake]);
-
-      // Remove snowflake after 1 second
-      setTimeout(() => {
-        setSnowflakes((prev) => prev.filter((flake) => flake.id !== newSnowflake.id));
-      }, 1000);
+    const fetchJobs = async () => {
+      const querySnapshot = await getDocs(collection(db, "jobs"));
+      const jobsArray = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setJobListings(jobsArray);
     };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
+    fetchJobs();
   }, []);
 
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link);
     setCopied(link);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteDoc(doc(db, "jobs", id));
+    setJobListings(jobListings.filter(job => job.id !== id));
+  };
+
+  const handleEdit = (job: { id: string; title: string; company: string; link: string }) => {
+    setIsEditing(true);
+    setShowForm(true);
+    setEditJobId(job.id);
+    setFormData({ title: job.title, company: job.company, link: job.link });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (isEditing && editJobId) {
+      await updateDoc(doc(db, "jobs", editJobId), formData);
+    } else {
+      await addDoc(collection(db, "jobs"), formData);
+    }
+    setFormData({ title: '', company: '', link: '' });
+    setShowForm(false);
+    setIsEditing(false);
+    setEditJobId(null);
+
+    // Refresh the job listings after the operation
+    const querySnapshot = await getDocs(collection(db, "jobs"));
+    const jobsArray = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    setJobListings(jobsArray);
   };
 
   const filteredJobs = jobListings.filter(job => {
@@ -75,10 +90,10 @@ export default function Jobs() {
       ))}
 
       <div className="relative z-10 p-8 max-w-6xl w-full mx-auto bg-black bg-opacity-30 rounded-lg shadow-lg mb-auto">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">DevOps & Cloud Engineer Jobs</h1>
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">DevOps & Cloud Engineer Jobs in Myanmar</h1>
         
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Search, Filter Bar, and Add Job Button */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
           <div className="flex flex-grow items-center bg-[#BDC3C7] rounded-lg shadow-md p-2">
             <FaSearch className="text-[#2C3E50] mr-2" />
             <input
@@ -99,8 +114,52 @@ export default function Jobs() {
               <option key={company} value={company}>{company}</option>
             ))}
           </select>
+          <button
+            className="bg-[#2C3E50] text-[#BDC3C7] rounded-lg p-2 hover:bg-[#BDC3C7] hover:text-[#2C3E50] flex items-center"
+            onClick={() => setShowForm(!showForm)}
+          >
+            <FaPlus className="mr-2" /> {showForm ? 'Cancel' : 'Add Job'}
+          </button>
         </div>
-        
+
+        {/* CRUD Form */}
+        {showForm && (
+          <form onSubmit={handleFormSubmit} className="mb-6">
+            <div className="flex flex-col gap-4">
+              <input
+                type="text"
+                placeholder="Job Title"
+                className="bg-[#BDC3C7] text-[#2C3E50] border-none focus:outline-none p-2 rounded-lg"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+              <input
+                type="text"
+                placeholder="Company Name"
+                className="bg-[#BDC3C7] text-[#2C3E50] border-none focus:outline-none p-2 rounded-lg"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                required
+              />
+              <input
+                type="url"
+                placeholder="Job Link"
+                className="bg-[#BDC3C7] text-[#2C3E50] border-none focus:outline-none p-2 rounded-lg"
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                required
+              />
+              <button
+                type="submit"
+                className="bg-[#2C3E50] text-[#BDC3C7] rounded-lg p-2 hover:bg-[#BDC3C7] hover:text-[#2C3E50]"
+              >
+                {isEditing ? 'Update Job' : 'Add Job'}
+              </button>
+            </div>
+          </form>
+        )}
+
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {filteredJobs.map((job) => (
             <li 
@@ -121,6 +180,18 @@ export default function Jobs() {
                   onClick={() => window.open(job.link, '_blank')}
                 >
                   <FaExternalLinkAlt className="w-5 h-5" />
+                </button>
+                <button
+                  className="text-[#BDC3C7] hover:text-gray-300 flex items-center"
+                  onClick={() => handleEdit(job)}
+                >
+                  <FaEdit className="w-5 h-5" />
+                </button>
+                <button
+                  className="text-red-500 hover:text-red-700 flex items-center"
+                  onClick={() => handleDelete(job.id)}
+                >
+                  <FaTrashAlt className="w-5 h-5" />
                 </button>
               </div>
             </li>
