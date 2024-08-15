@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { FaExternalLinkAlt, FaCopy, FaCheck, FaEdit, FaTrashAlt, FaSearch, FaPlus } from 'react-icons/fa';
 import { db } from './firebase'; // Firebase config file
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import Link from 'next/link';
 
 // Define a TypeScript interface for a Job
 interface Job {
@@ -23,6 +24,8 @@ export default function Jobs() {
   const [formData, setFormData] = useState<{ title: string; company: string; link: string }>({ title: '', company: '', link: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [editJobId, setEditJobId] = useState<string | null>(null);
+  const currentYear = new Date().getFullYear();
+
 
   // Fetch job listings from Firebase
   useEffect(() => {
@@ -208,7 +211,12 @@ export default function Jobs() {
       </div>
 
       <footer className="relative z-10 p-4 text-center bg-black bg-opacity-50 text-white">
-        <p>&copy; 2024 Your Website. All rights reserved.</p>
+      <p>
+          &copy; {currentYear} DevOps & Cloud Engineer Jobs in Myanmar | Created by{' '}
+          <Link href="https://waiyansoe.vercel.app/" target="_blank" className="text-blue-500 hover:underline">
+            Wai Yan Soe
+          </Link>
+        </p>
       </footer>
 
       <style jsx>{`
