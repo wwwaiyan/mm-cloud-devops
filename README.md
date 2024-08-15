@@ -2,4 +2,4 @@
 ## testing
 testing url : https://mm-cloud-devops.vercel.app/
 
-I am not a developer. Used ChatGPT 
+developed by chatgpt -_-
